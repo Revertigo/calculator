@@ -1,5 +1,6 @@
 #include "scanner.h"
 #include "symtab.h"
+
 // globals
 Token_stream ts;
 Symbol_table st; 
@@ -11,9 +12,11 @@ int statement()
 	switch (t.kind) {
 	case INT:
 		return declaration();
+    case IF:
+	    return condition();
 	default:
 		ts.putback(t);     // put t back into the token stream
-		return expression();
+		return logic_or();
 	}
 }
 
@@ -24,6 +27,24 @@ int declaration()
 	string name = t.name;
         st.declare(name, 0);
 	return 0;
+}
+
+int condition()
+{
+    int stipulation = logic_or(); //Read condition value
+    int do_statement = logic_or();
+    Token t = ts.get();
+    int do_not_statement = logic_or();
+
+    if(t.kind != ELSE){
+        throw runtime_error("if without else");
+    }
+    else if(stipulation != 0){ //i.e. condition is true
+        return do_statement;
+    }
+    else{
+        return do_not_statement;
+    }
 }
 
 // + and -
@@ -42,30 +63,10 @@ int expression()
                 left -= term();    // evaluate Term and subtract
                 t = ts.get();
                 break;
-            case '<':
-                left = (left < term());
-                t = ts.get();
-                break;
-            case '>':
-                left = (left > term());
-                t = ts.get();
-                break;
-            case '&': {//Logical AND has higher precedence then logical OR
-                int right = term(); //since we need to parse the right side anyway
-                left = (left && right);
-                t = ts.get();
-                break;
-            }
-            case '|': {
-                int right = term();
-                left = (left || right);//since we need to parse the right side anyway
-                t = ts.get();
-                break;
-            }
             default:
                 ts.putback(t);     // put t back into the token stream
                 return left;       // finally: no more + or -: return the answer
-            }
+        }
     }
 }
 
@@ -92,7 +93,7 @@ int term()
             default:
                 ts.putback(t);
                 return left;
-            }
+        }
     }
 }
 
@@ -102,17 +103,20 @@ int primary()
     switch (t.kind) {
         case '(':    // handle '(' expression ')'
         {
-            int d = expression();
+            int d = logic_or();
             t = ts.get();
-            if (t.kind != ')') throw runtime_error("')' expected");
+            if (t.kind != ')'){
+                throw runtime_error("')' expected");
+            }else{
                 return d;
+            }
         }
         case '-':
             return - primary();
         case '+':
             return primary();
         case '!':
-            return !primary();
+            return !primary();  //! has higher precedence then * and /
         case NUM:
             return t.value;  // return the number value
         case ID:
@@ -120,7 +124,7 @@ int primary()
             string n = t.name;
             Token next = ts.get();
             if (next.kind == '=') {	// name = expression
-                    int d = expression();
+                    int d = logic_or();
                 st.set(n, d);
                     return d; // return the assignment value
             }
@@ -131,5 +135,59 @@ int primary()
         }
         default:
             throw runtime_error("primary expected");
+    }
+}
+
+int logic_or()
+{
+    //Logical AND has higher precedence then logical OR
+    int left = logic_and();
+    Token t = ts.get();
+
+    while(true) {
+        if (t.kind == '|') {
+            int right = logic_and();//Every operator calls the one with higher precedence
+            left = (left || right);//since we need to parse the right side anyway
+            t = ts.get();
+        } else {
+            ts.putback(t);
+            return left;
+        }
+    }
+
+}
+int logic_and(){
+    int left = logic_bigger_smaller();
+    Token t = ts.get();
+
+    while(true) {
+        if (t.kind == '&') {
+            int right = logic_bigger_smaller(); //since we need to parse the right side anyway
+            left = (left && right);
+            t = ts.get();
+        } else {
+            ts.putback(t);
+            return left;
+        }
+    }
+}
+int logic_bigger_smaller(){
+    int left = expression();
+    Token t = ts.get();
+
+    while (true) {
+        switch(t.kind){
+            case '<':
+                left = (left < expression());
+                t = ts.get();
+                break;
+            case '>':
+                left = (left > expression());
+                t = ts.get();
+                break;
+            default:
+                ts.putback(t);
+                return left;
+        }
     }
 }
