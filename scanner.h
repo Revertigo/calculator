@@ -4,6 +4,7 @@
 #include<algorithm>
 #include <regex>
 #include<stdexcept>
+
 using namespace std;
 
 enum Tokens {
@@ -17,13 +18,15 @@ enum Tokens {
 
 class Token{
 public:
-    char kind;        	    // what kind of token
+    char kind;        	 // what kind of token
     int value;     	    // for numbers a value 
-    string name;     	    // for variables a name
+    string name;     	// for variables a name
 
-    Token(char ch) :kind(ch), value(0) { }
-    Token(char ch, int val) :kind(ch), value(val) { }
-    Token(char ch, string n) :kind{ch}, name{n} { }
+    //Constructor delegation
+    explicit Token(char ch) : Token(ch, 0, "") { }
+    Token(char ch, int val) : Token(ch, val, "") { }
+    Token(char ch, string n) : Token(ch, 0, move(n)) { }
+    Token(char ch, int val, string n) : kind(ch), value(val), name(move(n)) {}
 };
 
 class Token_stream {

@@ -1,8 +1,10 @@
 #include "scanner.h"
-extern Token_stream ts;
 #include <iostream>
 
-int main(void) {
+extern Token_stream ts;
+
+int main()
+{
     try {
         int val = 0;
         cout << "> "; // prompt

@@ -2,9 +2,8 @@
 #include "symtab.h"
 
 // globals
-Token_stream ts;
-Symbol_table st; 
-//map<string, int> names;
+Token_stream ts;/* NOLINT */
+Symbol_table st;
 
 int statement()
 {
@@ -100,6 +99,7 @@ int term()
 int primary()
 {
     Token t = ts.get();
+
     switch (t.kind) {
         case '(':    // handle '(' expression ')'
         {
@@ -156,7 +156,8 @@ int logic_or()
     }
 
 }
-int logic_and(){
+int logic_and()
+{
     int left = logic_bigger_smaller();
     Token t = ts.get();
 
@@ -171,7 +172,8 @@ int logic_and(){
         }
     }
 }
-int logic_bigger_smaller(){
+int logic_bigger_smaller()
+{
     int left = expression();
     Token t = ts.get();
 
